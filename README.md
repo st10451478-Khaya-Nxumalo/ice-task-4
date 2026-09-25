@@ -128,9 +128,3 @@ Two things need manual action in Postman before running the full suite:
 Import the collection into Postman, set `baseUrl` if not running on
 `localhost:5000`, and run.
 
-## Submission checklist
-
-- [ ] Push this repo to GitHub
-- [ ] Confirm `.env` is **not** committed (already in `.gitignore`)
-- [ ] Export/commit the Postman collection (already included under `postman/`)
-- [ ] Submit the GitHub repo link
