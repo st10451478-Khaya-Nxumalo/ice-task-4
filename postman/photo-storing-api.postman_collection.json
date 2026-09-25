@@ -1,0 +1,606 @@
+{
+  "info": {
+    "name": "Photo Storing API",
+    "description": "Collection covering all routes for the MERN photo-storing backend: auth, users, and photos (including Cloudinary-backed uploads). Uses collection variables to chain tokens/IDs between requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "userToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "secondUserId", "value": "" },
+    { "key": "photoId", "value": "" },
+    { "key": "userEmail", "value": "" },
+    { "key": "adminEmail", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Signup - Regular User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test('Returns token', () => pm.expect(data.token).to.be.a('string'));",
+                  "pm.test('Default role is user', () => pm.expect(data.user.role).to.eql('user'));",
+                  "pm.test('No password field returned', () => pm.expect(data.user.password).to.be.undefined);",
+                  "if (data.token) { pm.collectionVariables.set('userToken', data.token); }",
+                  "if (data.user && data.user._id) { pm.collectionVariables.set('userId', data.user._id); }",
+                  "if (data.user && data.user.email) { pm.collectionVariables.set('userEmail', data.user.email); }"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('generatedEmail', `user_${Date.now()}@example.com`);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"TestUser\",\n  \"email\": \"{{generatedEmail}}\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] }
+          }
+        },
+        {
+          "name": "Signup - Admin (to be promoted)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('generatedAdminEmail', `admin_${Date.now()}@example.com`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test('Returns token', () => pm.expect(data.token).to.be.a('string'));",
+                  "if (data.token) { pm.collectionVariables.set('adminToken', data.token); }",
+                  "if (data.user && data.user._id) { pm.collectionVariables.set('secondUserId', data.user._id); }",
+                  "if (data.user && data.user.email) { pm.collectionVariables.set('adminEmail', data.user.email); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"SoonToBeAdmin\",\n  \"email\": \"{{generatedAdminEmail}}\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] }
+          }
+        },
+        {
+          "name": "Signup - Duplicate Email (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 409 Conflict', () => pm.response.to.have.status(409));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"TestUser\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/signup", "host": ["{{baseUrl}}"], "path": ["auth", "signup"] }
+          }
+        },
+        {
+          "name": "Login - Regular User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Returns token', () => pm.expect(data.token).to.be.a('string'));",
+                  "if (data.token) { pm.collectionVariables.set('userToken', data.token); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login - Wrong Password (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"WrongPassword!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has expected fields', () => {",
+                  "  pm.expect(data).to.have.property('username');",
+                  "  pm.expect(data).to.have.property('email');",
+                  "  pm.expect(data).to.have.property('role');",
+                  "});",
+                  "pm.test('No password returned', () => pm.expect(data.password).to.be.undefined);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Get My Profile - No Token (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 401', () => pm.response.to.have.status(401));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Username updated', () => pm.expect(data.username).to.eql('UpdatedName'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{userToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"UpdatedName\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Get All Users - As Regular User (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          }
+        },
+        {
+          "name": "[Manual] Promote secondUser to Admin via DB",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/", "host": ["{{baseUrl}}"], "path": [""] },
+            "description": "NOTE: Promoting requires an existing admin. Manually set the first admin's role to 'admin' directly in MongoDB (or via a seed script) before running the Admin-only requests below with {{adminToken}}. Once that first admin exists and logs in, it can promote all subsequent admins through the API."
+          }
+        },
+        {
+          "name": "Get All Users - As Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/users", "host": ["{{baseUrl}}"], "path": ["users"] }
+          }
+        },
+        {
+          "name": "Promote User - As Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Role is now admin', () => pm.expect(data.role).to.eql('admin'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/promote",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "promote"]
+            }
+          }
+        },
+        {
+          "name": "Demote User - As Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Role is now user', () => pm.expect(data.role).to.eql('user'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/demote",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{userId}}", "demote"]
+            }
+          }
+        },
+        {
+          "name": "Promote User - As Regular User (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{secondUserId}}/promote",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{secondUserId}}", "promote"]
+            }
+          }
+        },
+        {
+          "name": "Delete User - As Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{secondUserId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "{{secondUserId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Photos",
+      "item": [
+        {
+          "name": "Upload Photo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has imageUrl from Cloudinary', () => pm.expect(data.imageUrl).to.include('http'));",
+                  "pm.test('Has cloudinaryPublicId', () => pm.expect(data.cloudinaryPublicId).to.be.a('string'));",
+                  "if (data._id) { pm.collectionVariables.set('photoId', data._id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Mountain View", "type": "text" },
+                { "key": "description", "value": "A photograph taken during a hike.", "type": "text" },
+                { "key": "image", "type": "file", "src": "" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/photos", "host": ["{{baseUrl}}"], "path": ["photos"] }
+          }
+        },
+        {
+          "name": "Upload Photo - No File (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 400', () => pm.response.to.have.status(400));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Missing Image", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/photos", "host": ["{{baseUrl}}"], "path": ["photos"] }
+          }
+        },
+        {
+          "name": "Get Gallery (all photos)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Response is an array', () => pm.expect(data).to.be.an('array'));",
+                  "pm.test('Photo has owner info', () => {",
+                  "  if (data.length > 0) { pm.expect(data[0]).to.have.property('owner'); }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/photos", "host": ["{{baseUrl}}"], "path": ["photos"] }
+          }
+        },
+        {
+          "name": "Get All Photos - As Regular User (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": { "raw": "{{baseUrl}}/photos/all", "host": ["{{baseUrl}}"], "path": ["photos", "all"] }
+          }
+        },
+        {
+          "name": "Get All Photos - As Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": { "raw": "{{baseUrl}}/photos/all", "host": ["{{baseUrl}}"], "path": ["photos", "all"] }
+          }
+        },
+        {
+          "name": "Update Photo - As Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Title updated', () => pm.expect(data.title).to.eql('Mountain View - Updated'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Mountain View - Updated", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/photos/{{photoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos", "{{photoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Photo - As Non-Owner (should fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 403', () => pm.response.to.have.status(403));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Hijacked Title", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/photos/{{photoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos", "{{photoId}}"]
+            },
+            "description": "This request uses adminToken to demonstrate a non-owner, non-admin scenario would fail. Note: if adminToken belongs to an actual admin, this will succeed (200) since admins may edit any photo - swap in a second regular user's token to properly test the 403 case."
+          }
+        },
+        {
+          "name": "Delete Photo - As Owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/photos/{{photoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos", "{{photoId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Photo - Already Deleted (should 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 404', () => pm.response.to.have.status(404));"],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/photos/{{photoId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["photos", "{{photoId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
